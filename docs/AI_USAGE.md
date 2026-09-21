@@ -29,6 +29,14 @@ blind generation.
 | Full SSO / RBAC | Out of scope; shared `DEMO_ACCESS_TOKEN` is a deployment gate only |
 | E2E / browser tests | Low signal per runtime second for this project size |
 
+## Seed decisions
+
+- **`managerId`:** assigned in a post-pass after all hire/raise/terminate batches — same
+  department + country, prefer one level above; leave null when no higher peer exists (avoids
+  cycles; not left null for everyone).
+- **RNG / clock:** `faker.seed(42)` and `SEED_TODAY = 2026-09-01T00:00:00.000Z`; `BASE_CURRENCY`
+  pinned to `INR` inside the seed (not read from `.env`).
+
 ## Prompts and artifacts
 
 Representative prompts and instructions used during planning live under `docs/prompts/`.
