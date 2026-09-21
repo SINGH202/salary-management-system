@@ -1,0 +1,17 @@
+{
+  "name": "@acme/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"Next.js scaffold lands in commit 14 — placeholder\" && exit 0",
+    "build": "echo \"Next.js scaffold lands in commit 14\" && exit 0",
+    "lint": "echo \"lint after Next scaffold\" && exit 0",
+    "typecheck": "echo \"typecheck after Next scaffold\" && exit 0"
+  },
+  "dependencies": {
+    "@acme/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
