@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+
+# SQLite
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Build
+dist/
+.next/
+out/
+coverage/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
