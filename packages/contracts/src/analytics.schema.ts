@@ -8,11 +8,17 @@ export const analyticsQuerySchema = z.object({
   includeTerminated: z
     .union([z.literal('true'), z.literal('false'), z.boolean()])
     .optional()
-    .transform((v) => v === true || v === 'true'),
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      return v === true || v === 'true';
+    }),
   includeContractors: z
     .union([z.literal('true'), z.literal('false'), z.boolean()])
     .optional()
-    .transform((v) => v === true || v === 'true'),
+    .transform((v) => {
+      if (v === undefined) return undefined;
+      return v === true || v === 'true';
+    }),
 });
 
 export type AnalyticsQuery = z.infer<typeof analyticsQuerySchema>;
