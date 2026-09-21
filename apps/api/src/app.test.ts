@@ -47,10 +47,34 @@ describe('createApp plumbing', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns JSON 404 for authenticated unknown routes', async () => {
+    const res = await request(createApp())
+      .get('/api/no-such-route')
+      .set('Authorization', `Bearer ${TOKEN}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('NOT_FOUND');
+    expect(res.headers['content-type']).toMatch(/json/);
+  });
+
+  it('returns 400 JSON for malformed JSON bodies', async () => {
+    const res = await request(createApp())
+      .post('/api/employees')
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .set('Content-Type', 'application/json')
+      .send('{not-json');
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
+  });
+
   it('serializes bigint fields as strings via json replacer', async () => {
-    const app = createApp();
-    app.get('/api/__test/bigint', (_req, res) => {
-      res.json({ amount: 12345n });
+    const app = createApp({
+      registerRoutes: (expressApp) => {
+        expressApp.get('/api/__test/bigint', (_req, res) => {
+          res.json({ amount: 12345n });
+        });
+      },
     });
 
     const res = await request(app)

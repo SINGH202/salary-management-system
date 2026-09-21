@@ -46,6 +46,35 @@ function sendError(
   });
 }
 
+type HttpError = Error & {
+  status?: number;
+  statusCode?: number;
+  type?: string;
+};
+
+function isBodyParserError(err: unknown): err is HttpError {
+  if (!(err instanceof Error)) return false;
+  const httpErr = err as HttpError;
+  const status = httpErr.status ?? httpErr.statusCode;
+  // express.json / body-parser: SyntaxError for bad JSON (400), entity.too.large (413)
+  if (err instanceof SyntaxError && status === 400) return true;
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    return (
+      httpErr.type === 'entity.parse.failed' ||
+      httpErr.type === 'entity.too.large' ||
+      httpErr.type === 'request.aborted' ||
+      httpErr.type === 'encoding.unsupported' ||
+      err instanceof SyntaxError
+    );
+  }
+  return false;
+}
+
+/** Catch-all for authenticated unmatched routes — keeps the JSON error envelope. */
+export function notFoundHandler(req: Request, _res: Response, next: NextFunction): void {
+  next(notFound(`No route for ${req.method} ${req.path}`));
+}
+
 export function errorHandler(
   err: unknown,
   _req: Request,
@@ -64,6 +93,15 @@ export function errorHandler(
 
   if (err instanceof ZodError) {
     sendError(res, 400, 'VALIDATION_ERROR', 'Request validation failed', err.flatten());
+    return;
+  }
+
+  if (isBodyParserError(err)) {
+    const status = err.status ?? err.statusCode ?? 400;
+    const code = status === 413 ? 'PAYLOAD_TOO_LARGE' : 'BAD_REQUEST';
+    const message =
+      status === 413 ? 'Request body too large' : 'Malformed JSON request body';
+    sendError(res, status, code, message);
     return;
   }
 
