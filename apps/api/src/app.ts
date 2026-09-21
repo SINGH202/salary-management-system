@@ -10,6 +10,7 @@ import { createBandsModule } from './modules/bands/index.js';
 import { createCompensationModule } from './modules/compensation/index.js';
 import { createEmployeesModule } from './modules/employees/index.js';
 import { createPrismaFxRateProvider, type FxRateProvider } from './modules/fx/index.js';
+import { createTransferModule } from './modules/transfer/index.js';
 
 /**
  * Installs BigInt → string for res.json without mutating BigInt.prototype.
@@ -69,9 +70,12 @@ export async function createApp(options: CreateAppOptions = {}): Promise<Express
   });
   const bands = createBandsModule(db, { fx, baseCurrency });
   const analytics = createAnalyticsModule(db, bands.service);
+  const transfer = createTransferModule(db, { fx, baseCurrency });
 
   app.use('/api/bands', bands.router);
   app.use('/api/analytics', analytics.router);
+  app.use('/api/import', transfer.importRouter);
+  app.use('/api/export', transfer.exportRouter);
   // Compensation + compa-ratio before employees /:id so nested paths win
   app.use('/api/employees', compensation.router);
   app.use('/api/employees', bands.compaRatioRouter);
