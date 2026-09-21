@@ -46,6 +46,40 @@ export async function seedSmallFixture(
     });
   }
 
+  // One band per (jobFamily, level, country) used by this fixture.
+  for (const country of COUNTRIES) {
+    for (const level of LEVELS) {
+      const levelIndex = LEVELS.indexOf(level);
+      const midAnnualNative = BigInt(700_000_00 + levelIndex * 150_000_00);
+      const minAnnualNative = (midAnnualNative * 80n) / 100n;
+      const maxAnnualNative = (midAnnualNative * 120n) / 100n;
+      await db.compensationBand.upsert({
+        where: {
+          jobFamily_level_countryCode: {
+            jobFamily: 'Software',
+            level,
+            countryCode: country.code,
+          },
+        },
+        create: {
+          jobFamily: 'Software',
+          level,
+          countryCode: country.code,
+          minMinor: minAnnualNative,
+          midMinor: midAnnualNative,
+          maxMinor: maxAnnualNative,
+          currency: country.currency,
+        },
+        update: {
+          minMinor: minAnnualNative,
+          midMinor: midAnnualNative,
+          maxMinor: maxAnnualNative,
+          currency: country.currency,
+        },
+      });
+    }
+  }
+
   const employeeIds: string[] = [];
 
   await db.$transaction(async (tx) => {
