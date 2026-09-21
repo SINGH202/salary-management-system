@@ -105,6 +105,11 @@ export function errorHandler(
     return;
   }
 
+  if (err instanceof Error && err.name === 'MulterError') {
+    sendError(res, 400, 'BAD_REQUEST', err.message);
+    return;
+  }
+
   console.error(err);
   sendError(res, 500, 'INTERNAL_ERROR', 'Internal server error');
 }
