@@ -5,20 +5,27 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma generate && tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "db:migrate": "echo \"db:migrate will be wired in a later commit\" && exit 0",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
     "db:seed": "echo \"db:seed will be wired in a later commit\" && exit 0"
   },
+  "prisma": {
+    "schema": "src/db/prisma/schema.prisma"
+  },
   "dependencies": {
-    "@acme/contracts": "workspace:*"
+    "@acme/contracts": "workspace:*",
+    "@prisma/client": "^6.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "prisma": "^6.1.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"

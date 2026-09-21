@@ -22,12 +22,22 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: pnpm exec prisma generate
+        env:
+          # Relative to schema dir apps/api/src/db/prisma → apps/api/ci.db
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
+
       - name: Lint
         run: pnpm -r lint
 
       - name: Typecheck
         run: pnpm -r typecheck
+        env:
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
 
       - name: Test
         run: pnpm test
-        # prisma generate + migrate deploy land when the schema commit lands
+        env:
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
