@@ -225,8 +225,19 @@ describe('analytics API', () => {
     expect(res.body.averageAnnualBase).toBe('224'); // 1120/5
     // Median of 100,120,200,300,400 → n=5, ceil(0.5*5)-1=2 → 200
     expect(res.body.medianAnnualBase).toBe('200');
-    // Outliers among active with Software/L3/IN band: A(100) below, C(300) in, B(200) in,
-    // Sales D L3 also Software/L3 — 400 above; contractor 50 below; monthly Finance 120 below
-    expect(res.body.outlierCount).toBeGreaterThanOrEqual(1);
+    // Outliers: A(100) below, D(400) above, contractor(50) below, Finance(120) below
+    expect(res.body.outlierCount).toBe(4);
+  });
+
+  it('summary outlierCount respects includeContractors=false', async () => {
+    const withContractors = await auth(request(app).get('/api/analytics/summary'));
+    const without = await auth(request(app).get('/api/analytics/summary')).query({
+      includeContractors: 'false',
+    });
+
+    expect(without.status).toBe(200);
+    // Same active outliers minus the contractor (50)
+    expect(without.body.outlierCount).toBe(withContractors.body.outlierCount - 1);
+    expect(without.body.outlierCount).toBe(3);
   });
 });

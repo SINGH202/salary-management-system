@@ -59,6 +59,8 @@ export function createAnalyticsRouter(
         page: 1,
         pageSize: 1,
         includeTerminated: query.includeTerminated === true,
+        // Honor the same flag as the rest of summary; default (undefined) keeps contractors.
+        includeContractors: query.includeContractors,
       });
       const summary = await repo.summary(scope, outliers.total);
       res.status(200).json(summary);
