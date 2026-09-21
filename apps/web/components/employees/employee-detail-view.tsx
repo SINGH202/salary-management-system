@@ -16,6 +16,10 @@ import {
 } from '@/lib/employees-api';
 import { formatMoneyMinor } from '@/lib/money-format';
 
+function labelize(value: string): string {
+  return value.replaceAll('_', ' ');
+}
+
 type Props = {
   employee: EmployeeDetail;
   history: SalaryHistoryRecord[];
@@ -26,16 +30,26 @@ export function EmployeeDetailView({ employee: initial, history: initialHistory 
   const [employee, setEmployee] = useState(initial);
   const [history, setHistory] = useState(initialHistory);
   const [terminateOpen, setTerminateOpen] = useState(false);
+  const [reloadError, setReloadError] = useState<string | null>(null);
   const isActive = employee.status === 'active';
 
   async function reload() {
-    const [nextEmployee, nextHistory] = await Promise.all([
-      getEmployee(employee.id),
-      getEmployeeHistory(employee.id),
-    ]);
-    setEmployee(nextEmployee);
-    setHistory(nextHistory);
-    router.refresh();
+    setReloadError(null);
+    try {
+      const [nextEmployee, nextHistory] = await Promise.all([
+        getEmployee(employee.id),
+        getEmployeeHistory(employee.id),
+      ]);
+      setEmployee(nextEmployee);
+      setHistory(nextHistory);
+      router.refresh();
+    } catch (err) {
+      setReloadError(
+        err instanceof Error
+          ? `Saved, but refresh failed: ${err.message}. Reload the page to see the latest data.`
+          : 'Saved, but refresh failed. Reload the page to see the latest data.',
+      );
+    }
   }
 
   return (
@@ -59,6 +73,12 @@ export function EmployeeDetailView({ employee: initial, history: initialHistory 
         ) : null}
       </div>
 
+      {reloadError ? (
+        <Typography variant="small" className="text-red-700">
+          {reloadError}
+        </Typography>
+      ) : null}
+
       <section className="grid gap-6 md:grid-cols-2">
         <div className="space-y-3 rounded-md border border-border p-4">
           <Typography variant="h3">Profile</Typography>
@@ -67,7 +87,7 @@ export function EmployeeDetailView({ employee: initial, history: initialHistory 
             <ProfileRow label="Job family" value={employee.jobFamily} />
             <ProfileRow label="Level" value={employee.level} />
             <ProfileRow label="Location" value={`${employee.location}, ${employee.countryCode}`} />
-            <ProfileRow label="Employment" value={employee.employmentType.replace('_', ' ')} />
+            <ProfileRow label="Employment" value={labelize(employee.employmentType)} />
             <ProfileRow label="Hired" value={formatDateOnlyUtc(employee.hireDate)} />
             <ProfileRow label="Manager" value={employee.managerName ?? '—'} />
             <ProfileRow
@@ -105,7 +125,7 @@ export function EmployeeDetailView({ employee: initial, history: initialHistory 
             <li key={record.id} className="relative pb-6 last:pb-0">
               <span className="absolute -left-[1.625rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
               <Typography variant="bodyMedium" className="font-medium">
-                {record.changeReason.replace('_', ' ')} ·{' '}
+                {labelize(record.changeReason)} ·{' '}
                 {formatMoneyMinor(record.amountMinor, record.currency)} / {record.payFrequency}
               </Typography>
               <Typography variant="small">
