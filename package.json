@@ -1,0 +1,24 @@
+{
+  "name": "acme-salary",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @acme/api --filter @acme/web dev",
+    "test": "pnpm --filter @acme/api test && pnpm --filter @acme/contracts test",
+    "lint": "pnpm -r lint",
+    "db:migrate": "pnpm --filter @acme/api db:migrate",
+    "db:seed": "pnpm --filter @acme/api db:seed",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}

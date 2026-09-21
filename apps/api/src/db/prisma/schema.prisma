@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Employee {
+  id                       String   @id @default(cuid())
+  employeeCode             String   @unique
+  firstName                String
+  lastName                 String
+  workEmail                String   @unique
+  countryCode              String
+  location                 String
+  department               String
+  jobFamily                String
+  level                    String
+  managerId                String?
+  manager                  Employee?  @relation("ManagerReports", fields: [managerId], references: [id])
+  reports                  Employee[] @relation("ManagerReports")
+  employmentType           String
+  hireDate                 DateTime
+  status                   String
+  gender                   String?
+
+  // Period amounts (not annualized). See docs/ARCHITECTURE.md.
+  currentSalaryAmountMinor BigInt
+  currentSalaryCurrency    String
+  currentSalaryBaseMinor   BigInt
+  currentPayFrequency      String
+
+  salaryRecords            SalaryRecord[]
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([countryCode, department, level])
+  @@index([status])
+  @@index([lastName])
+}
+
+model SalaryRecord {
+  id               String    @id @default(cuid())
+  employeeId       String
+  employee         Employee  @relation(fields: [employeeId], references: [id])
+  amountMinor      BigInt
+  currency         String
+  payFrequency     String
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  changeReason     String
+  note             String?
+  fxRateToBase     Float
+  amountBaseMinor  BigInt
+  createdAt        DateTime  @default(now())
+
+  @@index([employeeId, effectiveFrom])
+  @@index([employeeId, effectiveTo])
+}
+
+model CompensationBand {
+  id          String @id @default(cuid())
+  jobFamily   String
+  level       String
+  countryCode String
+  minMinor    BigInt
+  midMinor    BigInt
+  maxMinor    BigInt
+  currency    String
+
+  @@unique([jobFamily, level, countryCode])
+}
+
+model FxRate {
+  id           String   @id @default(cuid())
+  currencyCode String   @unique
+  rateToBase   Float
+  asOf         DateTime
+}

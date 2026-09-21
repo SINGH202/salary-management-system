@@ -87,6 +87,6 @@ answer "what's average pay in India vs the US, and who's below band?" without op
 
 - One HR manager, one organisation — no multi-tenancy.
 - Base salary only. Stored at native pay frequency (monthly or annual); compared and charted as annualized base-currency amounts.
-- USD is the reporting base currency (`BASE_CURRENCY=USD`).
+- INR is the reporting base currency (`BASE_CURRENCY=INR`).
 - Active employees have exactly one open salary record; terminated employees have none.
 - Demo access is one shared bearer token, not a user session.

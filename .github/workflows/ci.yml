@@ -1,0 +1,49 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # version comes from package.json "packageManager" — do not also set "version" here
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        working-directory: apps/api
+        run: pnpm exec prisma generate
+        env:
+          # Relative to schema dir apps/api/src/db/prisma → apps/api/ci.db
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
+
+      - name: Apply migrations
+        working-directory: apps/api
+        run: pnpm exec prisma migrate deploy
+        env:
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
+
+      - name: Lint
+        run: pnpm -r lint
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+        env:
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
+
+      - name: Test
+        run: pnpm test
+        env:
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
