@@ -39,8 +39,6 @@ function csvRow(overrides: Record<string, string> = {}): string {
     payFrequency: 'annual',
     ...overrides,
   };
-  const headers = Object.keys(base);
-  // Stable header order matching IMPORT_HEADERS-ish
   const ordered = [
     'employeeCode',
     'firstName',
