@@ -20,6 +20,16 @@ describe('employeeUpdateSchema', () => {
     const result = employeeUpdateSchema.safeParse({ employeeCode: 'E-1' });
     expect(result.success).toBe(false);
   });
+
+  it('rejects empty-string managerId', () => {
+    const result = employeeUpdateSchema.safeParse({ managerId: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts null managerId to clear manager', () => {
+    const parsed = employeeUpdateSchema.parse({ managerId: null });
+    expect(parsed.managerId).toBeNull();
+  });
 });
 
 describe('employeeCreateSchema', () => {

@@ -26,11 +26,10 @@ export class EmployeesService {
       throw notFound(`Employee not found: ${id}`);
     }
 
-    if (input.managerId !== undefined && input.managerId === id) {
-      throw badRequest('managerId cannot reference the employee themselves');
-    }
-
-    if (input.managerId) {
+    if (input.managerId !== undefined && input.managerId !== null) {
+      if (input.managerId === id) {
+        throw badRequest('managerId cannot reference the employee themselves');
+      }
       const managerExists = await this.repo.exists(input.managerId);
       if (!managerExists) {
         throw badRequest(`managerId does not exist: ${input.managerId}`);

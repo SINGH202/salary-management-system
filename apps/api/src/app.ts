@@ -1,10 +1,13 @@
 import cors from 'cors';
 import express, { type Express } from 'express';
 import type { PrismaClient } from '@prisma/client';
+import type { Clock } from './common/clock.js';
 import { authGate } from './common/auth-gate.js';
 import { errorHandler, notFoundHandler } from './common/error-handler.js';
 import { ensureDbReady, prisma as defaultPrisma } from './db/client.js';
+import { createCompensationModule } from './modules/compensation/index.js';
 import { createEmployeesModule } from './modules/employees/index.js';
+import { createPrismaFxRateProvider, type FxRateProvider } from './modules/fx/index.js';
 
 /**
  * Installs BigInt → string for res.json without mutating BigInt.prototype.
@@ -18,12 +21,17 @@ function installBigIntJsonReplacer(app: Express): void {
 
 export type CreateAppOptions = {
   prisma?: PrismaClient;
+  fx?: FxRateProvider;
+  clock?: Clock;
+  baseCurrency?: string;
   /** Optional routes registered after domain routers and before the 404 handler (tests). */
   registerRoutes?: (app: Express) => void;
 };
 
-export function createApp(options: CreateAppOptions = {}): Express {
+export async function createApp(options: CreateAppOptions = {}): Promise<Express> {
   const db = options.prisma ?? defaultPrisma;
+  const baseCurrency = options.baseCurrency ?? process.env.BASE_CURRENCY ?? 'INR';
+  const fx = options.fx ?? (await createPrismaFxRateProvider(db, baseCurrency));
   const app = express();
   installBigIntJsonReplacer(app);
 
@@ -52,6 +60,14 @@ export function createApp(options: CreateAppOptions = {}): Express {
   app.use(authGate);
 
   const employees = createEmployeesModule(db);
+  const compensation = createCompensationModule(db, employees.service, {
+    fx,
+    clock: options.clock,
+    baseCurrency,
+  });
+
+  // Compensation first so POST / and /:id/* write routes register alongside list/get/patch
+  app.use('/api/employees', compensation.router);
   app.use('/api/employees', employees.router);
 
   options.registerRoutes?.(app);
