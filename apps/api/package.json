@@ -14,10 +14,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
-    "db:seed": "echo \"db:seed will be wired in a later commit\" && exit 0"
+    "db:seed": "prisma db seed"
   },
   "prisma": {
-    "schema": "src/db/prisma/schema.prisma"
+    "schema": "src/db/prisma/schema.prisma",
+    "seed": "tsx src/db/prisma/seed.ts"
   },
   "dependencies": {
     "@acme/contracts": "workspace:*",
@@ -27,6 +28,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@faker-js/faker": "9.3.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.10.2",
