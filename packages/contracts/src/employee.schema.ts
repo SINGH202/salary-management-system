@@ -107,7 +107,7 @@ export const employeeListQuerySchema = z.object({
   country: z.string().optional(),
   department: z.string().optional(),
   level: z.string().optional(),
-  status: employeeStatusSchema.optional(),
+  status: employeeStatusSchema.default('active'),
   search: z.string().optional(),
   sort: employeeSortFieldSchema.optional(),
   sortDir: z.enum(['asc', 'desc']).optional(),

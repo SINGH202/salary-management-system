@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { employeeCreateSchema, employeeUpdateSchema } from './employee.schema.js';
+import {
+  employeeCreateSchema,
+  employeeListQuerySchema,
+  employeeUpdateSchema,
+} from './employee.schema.js';
 
 describe('employeeUpdateSchema', () => {
   it('accepts mutable fields', () => {
@@ -38,5 +42,19 @@ describe('employeeCreateSchema', () => {
       effectiveFrom: '2026-01-15T00:00:00.000Z',
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('employeeListQuerySchema', () => {
+  it('defaults status to active when omitted', () => {
+    const parsed = employeeListQuerySchema.parse({});
+    expect(parsed.status).toBe('active');
+    expect(parsed.page).toBe(1);
+    expect(parsed.pageSize).toBe(20);
+  });
+
+  it('allows explicit terminated status', () => {
+    const parsed = employeeListQuerySchema.parse({ status: 'terminated' });
+    expect(parsed.status).toBe('terminated');
   });
 });

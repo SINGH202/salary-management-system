@@ -28,6 +28,6 @@ jobs:
       - name: Typecheck
         run: pnpm -r typecheck
 
-      - name: Test API
-        run: pnpm --filter @acme/api test
+      - name: Test
+        run: pnpm test
         # prisma generate + migrate deploy land when the schema commit lands
