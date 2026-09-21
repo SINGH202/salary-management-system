@@ -5,6 +5,7 @@ import type { Clock } from './common/clock.js';
 import { authGate } from './common/auth-gate.js';
 import { errorHandler, notFoundHandler } from './common/error-handler.js';
 import { ensureDbReady, prisma as defaultPrisma } from './db/client.js';
+import { createAnalyticsModule } from './modules/analytics/index.js';
 import { createBandsModule } from './modules/bands/index.js';
 import { createCompensationModule } from './modules/compensation/index.js';
 import { createEmployeesModule } from './modules/employees/index.js';
@@ -67,8 +68,10 @@ export async function createApp(options: CreateAppOptions = {}): Promise<Express
     baseCurrency,
   });
   const bands = createBandsModule(db, { fx, baseCurrency });
+  const analytics = createAnalyticsModule(db, bands.service);
 
   app.use('/api/bands', bands.router);
+  app.use('/api/analytics', analytics.router);
   // Compensation + compa-ratio before employees /:id so nested paths win
   app.use('/api/employees', compensation.router);
   app.use('/api/employees', bands.compaRatioRouter);

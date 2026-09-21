@@ -56,6 +56,8 @@ export type OutliersFilters = {
   page: number;
   pageSize: number;
   includeTerminated?: boolean;
+  /** When false, contractors are excluded. Default: include contractors. */
+  includeContractors?: boolean;
 };
 
 function toBandDto(row: CompensationBand): BandDto {
@@ -209,11 +211,17 @@ export class BandsService {
   async listOutliers(filters: OutliersFilters): Promise<PaginatedResult<OutlierDto>> {
     const pagination = normalizePagination(filters.page, filters.pageSize, { pageSize: 50 });
     const includeTerminated = filters.includeTerminated === true;
+    const includeContractors = filters.includeContractors !== false;
+
+    const where = {
+      ...(includeTerminated ? {} : { status: 'active' as const }),
+      ...(includeContractors ? {} : { employmentType: { not: 'contractor' } }),
+    };
 
     const [bands, employees] = await Promise.all([
       this.db.compensationBand.findMany(),
       this.db.employee.findMany({
-        where: includeTerminated ? undefined : { status: 'active' },
+        where,
         orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
       }),
     ]);
