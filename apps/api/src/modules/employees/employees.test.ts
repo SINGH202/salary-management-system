@@ -16,7 +16,7 @@ const TOKEN = 'test-demo-token';
 describe('employees API', () => {
   let dir: string;
   let db: PrismaClient;
-  let app: ReturnType<typeof createApp>;
+  let app: Awaited<ReturnType<typeof createApp>>;
   let employeeIds: string[];
 
   beforeAll(async () => {
@@ -33,7 +33,7 @@ describe('employees API', () => {
     db = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     await db.$connect();
     ({ employeeIds } = await seedSmallFixture(db, { count: 50 }));
-    app = createApp({ prisma: db });
+    app = await createApp({ prisma: db });
   });
 
   afterAll(async () => {

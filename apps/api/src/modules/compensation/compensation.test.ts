@@ -22,7 +22,7 @@ function auth(req: request.Test): request.Test {
 describe('compensation API', () => {
   let dir: string;
   let db: PrismaClient;
-  let app: ReturnType<typeof createApp>;
+  let app: Awaited<ReturnType<typeof createApp>>;
   let seq = 0;
 
   function nextCode(): string {
@@ -44,7 +44,7 @@ describe('compensation API', () => {
     resetDbReadyForTests();
     db = new PrismaClient({ datasources: { db: { url: dbUrl } } });
     await db.$connect();
-    app = createApp({
+    app = await createApp({
       prisma: db,
       clock: new FixedClock(NOW),
       fx: createFakeFxRateProvider({ INR: 1, USD: 83, GBP: 105 }, 'INR'),
@@ -169,6 +169,37 @@ describe('compensation API', () => {
       where: { employeeId: created.body.id, changeReason: 'hire' },
     });
     expect(closed?.effectiveTo?.toISOString()).toBe('2024-06-01T00:00:00.000Z');
+
+    const history = await auth(request(app).get(`/api/employees/${created.body.id}/history`));
+    expect(history.status).toBe(200);
+    expect(history.body.data).toHaveLength(2);
+    expect(history.body.data[0].changeReason).toBe('correction');
+    expect(history.body.data[1].changeReason).toBe('hire');
+    expect(history.body.data[0].effectiveFrom).toBe(history.body.data[1].effectiveFrom);
+  });
+
+  it('rejects hire with unknown managerId as BAD_REQUEST', async () => {
+    const code = nextCode();
+    const res = await auth(request(app).post('/api/employees')).send({
+      employeeCode: code,
+      firstName: 'No',
+      lastName: 'Manager',
+      workEmail: `${code.toLowerCase()}@acme.test`,
+      countryCode: 'IN',
+      location: 'Pune',
+      department: 'Engineering',
+      jobFamily: 'Software',
+      level: 'L2',
+      managerId: 'mgr_does_not_exist',
+      employmentType: 'full_time',
+      hireDate: '2024-03-01T00:00:00.000Z',
+      amountMinor: '100000000',
+      currency: 'INR',
+      payFrequency: 'monthly',
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('BAD_REQUEST');
   });
 
   it('rejects backdated raise and hire reason on salary-changes', async () => {

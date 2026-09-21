@@ -49,7 +49,8 @@ export class CompensationService {
 
     const rows = await this.db.salaryRecord.findMany({
       where: { employeeId },
-      orderBy: { effectiveFrom: 'desc' },
+      // Same-day raises share effectiveFrom; createdAt breaks the tie (newest first).
+      orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
     });
     return rows.map(toSalaryRecordDto);
   }

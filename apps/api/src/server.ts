@@ -5,7 +5,7 @@ const port = Number(process.env.PORT ?? 4000);
 
 async function main(): Promise<void> {
   await ensureDbReady();
-  const app = createApp();
+  const app = await createApp();
   app.listen(port, () => {
     console.log(`@acme/api listening on :${port}`);
   });

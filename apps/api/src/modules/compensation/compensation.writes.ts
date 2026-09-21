@@ -80,6 +80,13 @@ export async function insertEmployeeWithHire(
   const hireDate = new Date(input.hireDate);
   const pay = periodBaseMinor(input.amountMinor, input.currency, fx, baseCurrency);
 
+  if (input.managerId !== undefined && input.managerId !== null) {
+    const manager = await tx.employee.findUnique({ where: { id: input.managerId } });
+    if (!manager) {
+      throw badRequest(`managerId does not exist: ${input.managerId}`);
+    }
+  }
+
   const employee = await tx.employee.create({
     data: {
       employeeCode: input.employeeCode,
