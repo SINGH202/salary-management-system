@@ -152,4 +152,15 @@ describe('employees API', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('BAD_REQUEST');
   });
+
+  it('rejects empty-string managerId as validation error', async () => {
+    const id = employeeIds[3]!;
+    const res = await request(app)
+      .patch(`/api/employees/${id}`)
+      .set('Authorization', `Bearer ${TOKEN}`)
+      .send({ managerId: '' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+  });
 });
