@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Typography } from '@/components/typography';
 import { ApiError, createEmployee, type EmployeeCreateBody } from '@/lib/employees-api';
+import { todayLocalDateInput } from '@/lib/date-format';
 import { majorToMinorString } from '@/lib/money-format';
 
 type Props = {
@@ -25,7 +26,7 @@ const emptyForm = {
   jobFamily: '',
   level: 'L3',
   employmentType: 'full_time' as 'full_time' | 'part_time' | 'contractor',
-  hireDate: new Date().toISOString().slice(0, 10),
+  hireDate: '',
   amountMajor: '',
   currency: 'INR',
   payFrequency: 'annual' as 'annual' | 'monthly',
@@ -33,8 +34,12 @@ const emptyForm = {
 
 type FormState = typeof emptyForm;
 
+function freshForm(): FormState {
+  return { ...emptyForm, hireDate: todayLocalDateInput() };
+}
+
 export function AddEmployeeDialog({ open, onClose, onCreated }: Props) {
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [form, setForm] = useState<FormState>(freshForm);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -68,7 +73,7 @@ export function AddEmployeeDialog({ open, onClose, onCreated }: Props) {
         payFrequency: form.payFrequency,
       };
       await createEmployee(body);
-      setForm(emptyForm);
+      setForm(freshForm());
       onCreated();
       onClose();
     } catch (err) {

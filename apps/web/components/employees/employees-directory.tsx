@@ -20,6 +20,7 @@ import {
   type EmployeeListParams,
 } from '@/lib/employees-api';
 import { formatMoneyMinor } from '@/lib/money-format';
+import { formatDateOnlyUtc } from '@/lib/date-format';
 import { useDebouncedValue } from '@/lib/use-debounced-value';
 import { cn } from '@/lib/utils';
 import type { PaginatedResponse } from '@acme/contracts';
@@ -61,7 +62,7 @@ export function EmployeesDirectory({ initialData }: Props) {
       page,
       pageSize,
       status: filters.status,
-      country: filters.country || undefined,
+      country: filters.country.trim().toUpperCase() || undefined,
       department: filters.department || undefined,
       level: filters.level || undefined,
       search: debouncedSearch,
@@ -154,9 +155,7 @@ export function EmployeesDirectory({ initialData }: Props) {
         accessorKey: 'hireDate',
         header: 'Hired',
         cell: ({ getValue }) => (
-          <Typography variant="small">
-            {new Date(String(getValue())).toLocaleDateString()}
-          </Typography>
+          <Typography variant="small">{formatDateOnlyUtc(String(getValue()))}</Typography>
         ),
       },
       {
@@ -190,7 +189,7 @@ export function EmployeesDirectory({ initialData }: Props) {
     try {
       await downloadEmployeesCsv({
         status: filters.status,
-        country: filters.country || undefined,
+        country: filters.country.trim().toUpperCase() || undefined,
         department: filters.department || undefined,
         level: filters.level || undefined,
         search: debouncedSearch,
