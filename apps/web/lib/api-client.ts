@@ -17,6 +17,10 @@ function resolveBaseUrl(explicit?: string): string {
   return (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/$/, '');
 }
 
+export function getApiBaseUrl(): string {
+  return resolveBaseUrl();
+}
+
 function resolveToken(explicit?: string): string {
   return explicit ?? process.env.NEXT_PUBLIC_DEMO_ACCESS_TOKEN ?? '';
 }
