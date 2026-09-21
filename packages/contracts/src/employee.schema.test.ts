@@ -37,7 +37,7 @@ describe('employeeCreateSchema', () => {
       employmentType: 'full_time',
       hireDate: '2026-01-15T00:00:00.000Z',
       amountMinor: '12000000',
-      currency: 'USD',
+      currency: 'INR',
       payFrequency: 'annual',
       effectiveFrom: '2026-01-15T00:00:00.000Z',
     });

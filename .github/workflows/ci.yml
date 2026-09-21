@@ -29,6 +29,12 @@ jobs:
           # Relative to schema dir apps/api/src/db/prisma → apps/api/ci.db
           DATABASE_URL: file:../../../ci.db?connection_limit=1
 
+      - name: Apply migrations
+        working-directory: apps/api
+        run: pnpm exec prisma migrate deploy
+        env:
+          DATABASE_URL: file:../../../ci.db?connection_limit=1
+
       - name: Lint
         run: pnpm -r lint
 

@@ -27,8 +27,8 @@ disagree. `recordSalaryChange` on a terminated employee (no open record) is now 
 unspecified error. `PATCH countryCode` explicitly does not cascade into currency or band
 recalculation. Percentile-via-`LIMIT/OFFSET` is noted as an approximate quantile, one line, not
 hidden. Seed batches hire + full salary history + termination inside the same per-batch
-transaction, not one transaction per record. `BASE_CURRENCY=USD` is pinned as a seed constant
-matching `FxRate` USD=1. Terminate requires a UI confirm dialog. Plus six locks: annualized sort
+transaction, not one transaction per record. `BASE_CURRENCY=INR` is pinned as a seed constant
+matching `FxRate` INR=1. Terminate requires a UI confirm dialog. Plus six locks: annualized sort
 on the directory, `/bands/outliers` explicitly active-only by default, hire and CSV-export UI
 added to the frontend plan, `terminateDate` validation rules, the reconcile job explicitly cut
 (not deferred-and-forgotten) with reasoning, and `EmployeeUpdate` as a `.strict()` Zod schema so
@@ -95,7 +95,7 @@ and answer "what's average pay in India vs the US, and who's below band?" withou
    risk, covered by an explicit invariant test (§5). There is no reconcile/drift-repair job
    in v1 — cut, not deferred; see decision 9.
 4. **`SalaryRecord` snapshots its FX rate; `CompensationBand` does not.** A raise given in EUR
-   in 2023 should report the same USD figure forever — that's a historical fact. A band is "what
+   in 2023 should report the same INR figure forever — that's a historical fact. A band is "what
    we think fair pay is *right now*," so it converts at the current rate on every comparison.
    This asymmetry is intentional, not an inconsistency.
 5. **Money is integer minor units; FX rates are floats.** Both are correct — money has no
@@ -527,9 +527,9 @@ rows.
 - Fixed clock: `SEED_TODAY = new Date('2026-09-01T00:00:00.000Z')` — every relative date is
   computed from this constant.
 - Fixed RNG: `faker.seed(42)`.
-- `BASE_CURRENCY` is pinned to `'USD'` as a seed constant (not read from `process.env` — the
+- `BASE_CURRENCY` is pinned to `'INR'` as a seed constant (not read from `process.env` — the
   seed must be reproducible independent of local `.env` contents), matching the `FxRate` row
-  where `currencyCode = 'USD'` has `rateToBase = 1.0`.
+  where `currencyCode = 'INR'` has `rateToBase = 1.0`.
 - 10,000 employees, pyramid distribution (45% L1–L2, 35% L3–L4, 15% L5, 5% L6), 6 countries (US,
   IN, UK, DE, SG, BR) each mapped to its currency, 8 departments, 6 job families.
 - `employmentType`: 85% `full_time`, 10% `contractor`, 5% `part_time` — part-time employees get
@@ -551,7 +551,7 @@ rows.
 - Each employee gets 1–5 `SalaryRecord`s total (including the hire record): `promotion` or
   `merit`, 3–15% raises, 9–24 months apart.
 - ~3–5% of active employees deliberately below their band's `min`.
-- `FxRate`: `USD = 1.0` plus a rate for each other currency, `asOf = SEED_TODAY`.
+- `FxRate`: `INR = 1.0` plus a rate for each other currency into INR, `asOf = SEED_TODAY`.
 - `CompensationBand`: one row per `(jobFamily, level, countryCode)` combination present in the
   data, except the deliberate outlier set.
 - Print final counts (employees, salary records, terminated count, bands, FX rates) on
@@ -621,7 +621,9 @@ rows.
 - Root scripts use `pnpm --filter api db:migrate` / `pnpm --filter api db:seed` — **not**
   `pnpm -r`, since `apps/web` has no database and `-r` would run (or fail) it there too.
 - `render.yaml`: `api` service on a persistent disk, `DATABASE_URL=file:/data/acme.db?connection_limit=1`,
-  WAL mode enabled via a migration step (`PRAGMA journal_mode=WAL;`), health check hits
+  WAL mode enabled at connection time via `ensureDbReady` in `src/db/client.ts`
+  (not in migration.sql — Prisma wraps migrations in a transaction and SQLite ignores
+  journal_mode changes inside a transaction), health check hits
   `GET /api/health` (unauthenticated). `web` service sets `API_INTERNAL_URL` to the api
   service's private Render hostname, `NEXT_PUBLIC_API_URL` to its public one.
 
@@ -676,7 +678,7 @@ rows.
 ```
 DATABASE_URL="file:./dev.db?connection_limit=1"
 PORT=4000
-BASE_CURRENCY=USD
+BASE_CURRENCY=INR
 CORS_ORIGIN="http://localhost:3000"
 DEMO_ACCESS_TOKEN="change-me"
 ```

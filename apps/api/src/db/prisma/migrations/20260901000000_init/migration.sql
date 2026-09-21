@@ -88,5 +88,6 @@ CREATE UNIQUE INDEX "CompensationBand_jobFamily_level_countryCode_key" ON "Compe
 -- CreateIndex
 CREATE UNIQUE INDEX "FxRate_currencyCode_key" ON "FxRate"("currencyCode");
 
--- Required for SQLite under concurrent readers / occasional writers (see ARCHITECTURE.md)
-PRAGMA journal_mode=WAL;
+-- NOTE: Do NOT set PRAGMA journal_mode=WAL here.
+-- Prisma wraps each migration in a transaction; SQLite ignores journal_mode changes
+-- inside a transaction. WAL is enabled at connection time in src/db/client.ts.

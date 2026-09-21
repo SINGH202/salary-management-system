@@ -7,16 +7,16 @@ Do not reintroduce NestJS, `class-validator`, a `reconcile` command, or aggregat
 
 ## Stack
 
-| Layer | Choice | Reasoning |
-|---|---|---|
-| Backend | **Node.js, Express, TypeScript** | A real, independently testable and deployable API boundary. Next.js Route Handlers blur that boundary; NestJS would add DI/module ceremony the assessment does not need |
-| Validation | **Zod** in `packages/contracts`, imported by API and web | One schema for HTTP, CSV import, and forms. Not `class-validator` |
-| ORM | **Prisma** | Typed client, real migration files, schema as documentation |
-| DB | **SQLite** | 10k employees × ~3 salary records is small. Zero-ops, file-backed, clonable. Postgres later is a datasource change plus swapping `getPercentile` |
-| Frontend | **Next.js (App Router)** + TanStack Query + TanStack Table + shadcn/ui + Recharts | Server components for first paint; client tables in full manual (server) mode |
-| Monorepo | **pnpm workspaces**, no Turborepo | Two apps + one contracts package |
-| Tests | **Vitest + Supertest**, real SQLite file per test file | No mocked ORM |
-| Deploy | **Render** — `api` (persistent disk) + `web` | Health check hits unauthenticated `GET /api/health` |
+| Layer      | Choice                                                                            | Reasoning                                                                                                                                                               |
+| ---------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend    | **Node.js, Express, TypeScript**                                                  | A real, independently testable and deployable API boundary. Next.js Route Handlers blur that boundary; NestJS would add DI/module ceremony the assessment does not need |
+| Validation | **Zod** in `packages/contracts`, imported by API and web                          | One schema for HTTP, CSV import, and forms. Not `class-validator`                                                                                                       |
+| ORM        | **Prisma**                                                                        | Typed client, real migration files, schema as documentation                                                                                                             |
+| DB         | **SQLite**                                                                        | 10k employees × ~3 salary records is small. Zero-ops, file-backed, clonable. Postgres later is a datasource change plus swapping `getPercentile`                        |
+| Frontend   | **Next.js (App Router)** + TanStack Query + TanStack Table + shadcn/ui + Recharts | Server components for first paint; client tables in full manual (server) mode                                                                                           |
+| Monorepo   | **pnpm workspaces**, no Turborepo                                                 | Two apps + one contracts package                                                                                                                                        |
+| Tests      | **Vitest + Supertest**, real SQLite file per test file                            | No mocked ORM                                                                                                                                                           |
+| Deploy     | **Render** — `api` (persistent disk) + `web`                                      | Health check hits unauthenticated `GET /api/health`                                                                                                                     |
 
 ## Why Express is separate from Next.js
 
@@ -60,7 +60,7 @@ and `FxRateProvider`. Repositories are the only files allowed to import Prisma.
 - **SalaryRecord** — append-only, half-open `[effectiveFrom, effectiveTo)`. `effectiveTo = null`
   means currently open (**active employees only**). `fxRateToBase` and `amountBaseMinor` are
   snapshotted at write. `amountBaseMinor` is the same **period** as `amountMinor`, in
-  `BASE_CURRENCY` (USD). Never pre-annualized.
+  `BASE_CURRENCY` (INR). Never pre-annualized.
 - **CompensationBand** — annual min/mid/max per `(jobFamily, level, countryCode)`. Converted at
   the **current** FX rate on every comparison (not snapshotted).
 - **FxRate** — `currencyCode` unique, `rateToBase` is a float (a ratio, not money).
@@ -80,8 +80,8 @@ and `FxRateProvider`. Repositories are the only files allowed to import Prisma.
    (`insertEmployeeWithHire`, `recordSalaryChange`, `terminateEmployee`). **No reconcile /
    drift-repair job in v1** — cut, not deferred. If drift is ever observed, a one-off script is
    a half-hour fix, not a missing feature.
-4. **`SalaryRecord` snapshots FX; `CompensationBand` does not.** Historical USD on a raise is a
-   fact. A band is "fair pay *right now*."
+4. **`SalaryRecord` snapshots FX; `CompensationBand` does not.** Historical INR on a raise is a
+   fact. A band is "fair pay _right now_."
 5. **Money is integer minor units; FX rates are floats.** Do not "fix" `fxRateToBase` into `Money`.
 6. **`amountBaseMinor` is a period amount.** `Money.annualize(minor, payFrequency)` is the only
    ×12 in the codebase. Analytics, compa-ratio, outliers, and directory sort all call it
@@ -126,8 +126,11 @@ SSO/RBAC and does not contradict that non-goal.
   `(employeeId, effectiveFrom)`, `(employeeId, effectiveTo)`.
 - Offset pagination, max `pageSize=100`, default `page=1`, `pageSize=20`.
 - Aggregation in SQL, not in Node.
-- SQLite production: `connection_limit=1`, WAL via migration, `DATABASE_URL` on the Render disk
-  (`file:/data/acme.db?connection_limit=1`).
+- SQLite production: `connection_limit=1`, **WAL enabled at connection time** in
+  `apps/api/src/db/client.ts` (`ensureDbReady`). Do not put `PRAGMA journal_mode=WAL`
+  in Prisma migrations — Prisma wraps migrations in a transaction and SQLite ignores
+  journal_mode changes inside a transaction.
+- `DATABASE_URL` on the Render disk (`file:/data/acme.db?connection_limit=1`).
 - Two frontend URLs: `NEXT_PUBLIC_API_URL` (browser) and `API_INTERNAL_URL` (SSR).
 
 ## Testing
@@ -140,7 +143,7 @@ SSO/RBAC and does not contradict that non-goal.
 
 ## Seed
 
-`faker.seed(42)`, `SEED_TODAY = 2026-09-01T00:00:00.000Z`, `BASE_CURRENCY` pinned to `USD`.
+`faker.seed(42)`, `SEED_TODAY = 2026-09-01T00:00:00.000Z`, `BASE_CURRENCY` pinned to `INR`.
 10,000 employees through `insertEmployeeWithHire` / `recordSalaryChange` / `terminateEmployee`
 inside batched `$transaction`s (~500 employee lifecycles each), target < 15s.
 
