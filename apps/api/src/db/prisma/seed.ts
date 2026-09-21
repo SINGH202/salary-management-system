@@ -69,9 +69,9 @@ const LEVEL_RANK: Record<Level, number> = {
   L6: 6,
 };
 
-function pickLevel(index: number): Level {
-  // Pyramid: 45% L1–L2, 35% L3–L4, 15% L5, 5% L6
-  const bucket = index % 100;
+function pickLevel(): Level {
+  // Pyramid: 45% L1–L2, 35% L3–L4, 15% L5, 5% L6 — independent of other dimensions
+  const bucket = faker.number.int({ min: 0, max: 99 });
   if (bucket < 22) return 'L1';
   if (bucket < 45) return 'L2';
   if (bucket < 62) return 'L3';
@@ -80,11 +80,16 @@ function pickLevel(index: number): Level {
   return 'L6';
 }
 
-function pickEmploymentType(index: number): 'full_time' | 'part_time' | 'contractor' {
-  const bucket = index % 100;
+function pickEmploymentType(): 'full_time' | 'part_time' | 'contractor' {
+  // 85% full_time, 10% contractor, 5% part_time — independent of level/country
+  const bucket = faker.number.int({ min: 0, max: 99 });
   if (bucket < 85) return 'full_time';
   if (bucket < 95) return 'contractor';
   return 'part_time';
+}
+
+function pickPayFrequency(): 'annual' | 'monthly' {
+  return faker.number.int({ min: 0, max: 3 }) === 0 ? 'monthly' : 'annual';
 }
 
 /** Annual mid in native minor units for band (jobFamily × level × country). */
@@ -143,58 +148,62 @@ function planEmployees(): PlannedEmployee[] {
   const planned: PlannedEmployee[] = [];
 
   for (let i = 0; i < EMPLOYEE_COUNT; i++) {
-    const country = COUNTRIES[i % COUNTRIES.length]!;
-    const level = pickLevel(i);
-    const department = DEPARTMENTS[i % DEPARTMENTS.length]!;
-    const jobFamily = JOB_FAMILIES[i % JOB_FAMILIES.length]!;
-    const employmentType = pickEmploymentType(i);
-    const payFrequency = i % 4 === 0 ? 'monthly' : 'annual';
+    // Each dimension is an independent faker draw so country × department × family × level
+    // × employmentType cover the full product grid (not locked to the same index).
+    const country = faker.helpers.arrayElement([...COUNTRIES]);
+    const level = pickLevel();
+    const department = faker.helpers.arrayElement([...DEPARTMENTS]);
+    const jobFamily = faker.helpers.arrayElement([...JOB_FAMILIES]);
+    const employmentType = pickEmploymentType();
+    const payFrequency = pickPayFrequency();
 
     const mid = bandMidAnnualNative(level, country.currency);
     const min = (mid * 80n) / 100n;
-    // ~4% of actives will be forced below band (every 25th); terminated later skip outlier set
-    const forceBelowBand = i % 25 === 0;
+    // ~4% deliberately below band
+    const forceBelowBand = faker.number.int({ min: 0, max: 99 }) < 4;
+    const midPct = faker.number.int({ min: 90, max: 110 });
     let annualNative = forceBelowBand
       ? (min * 85n) / 100n
-      : (mid * BigInt(90 + (i % 21))) / 100n; // 90–110% of mid
+      : (mid * BigInt(midPct)) / 100n;
 
     if (employmentType === 'part_time') {
       annualNative = (annualNative * 60n) / 100n;
     }
 
-    const hireYearsAgo = 1 + (i % 8);
-    const hireDate = addMonths(SEED_TODAY, -hireYearsAgo * 12 - (i % 11));
+    const hireYearsAgo = faker.number.int({ min: 1, max: 8 });
+    const hireExtraMonths = faker.number.int({ min: 0, max: 10 });
+    const hireDate = addMonths(SEED_TODAY, -hireYearsAgo * 12 - hireExtraMonths);
 
-    const raiseCount = 1 + (i % 5); // 1–5 total records including hire → 0–4 raises
+    const raiseCount = faker.number.int({ min: 1, max: 5 }); // total records including hire
     const raises: PlannedEmployee['raises'] = [];
     let currentAnnual = annualNative;
     let cursor = hireDate;
 
     for (let r = 1; r < raiseCount; r++) {
-      const gapMonths = 9 + (i % 16); // 9–24
+      const gapMonths = faker.number.int({ min: 9, max: 24 });
       cursor = addMonths(cursor, gapMonths);
       if (cursor.getTime() >= SEED_TODAY.getTime()) {
         break;
       }
-      const pct = 3 + (i % 13); // 3–15%
+      const pct = faker.number.int({ min: 3, max: 15 });
       currentAnnual = currentAnnual + (currentAnnual * BigInt(pct)) / 100n;
       raises.push({
         effectiveFrom: cursor,
         amountMinor: payFrequency === 'monthly' ? currentAnnual / 12n : currentAnnual,
-        changeReason: r % 2 === 0 ? 'promotion' : 'merit',
+        changeReason: faker.helpers.arrayElement(['promotion', 'merit'] as const),
       });
     }
 
-    const willTerminate = i % 10 === 0; // ~10%
+    // ~10% terminated
     let terminateAt: Date | null = null;
-    if (willTerminate) {
+    if (faker.number.int({ min: 0, max: 99 }) < 10) {
       const lastEvent = raises.length > 0 ? raises[raises.length - 1]!.effectiveFrom : hireDate;
-      terminateAt = clampDate(addMonths(lastEvent, 2 + (i % 6)), SEED_TODAY);
+      terminateAt = clampDate(
+        addMonths(lastEvent, faker.number.int({ min: 1, max: 8 })),
+        SEED_TODAY,
+      );
       if (terminateAt.getTime() <= lastEvent.getTime()) {
-        terminateAt = clampDate(addMonths(lastEvent, 1), SEED_TODAY);
-      }
-      if (terminateAt.getTime() <= lastEvent.getTime()) {
-        terminateAt = null; // cannot terminate; keep active
+        terminateAt = null;
       }
     }
 
@@ -213,7 +222,7 @@ function planEmployees(): PlannedEmployee[] {
       level,
       employmentType,
       hireDate,
-      gender: i % 3 === 0 ? null : faker.person.sex(),
+      gender: faker.number.int({ min: 0, max: 2 }) === 0 ? null : faker.person.sex(),
       payFrequency,
       hireAmountMinor: payFrequency === 'monthly' ? annualNative / 12n : annualNative,
       raises,
@@ -338,117 +347,119 @@ async function main(): Promise<void> {
 
   const db = new PrismaClient();
   const started = Date.now();
-  await ensureDbReady(db);
+  try {
+    await ensureDbReady(db);
 
-  console.log('Clearing existing data…');
-  await db.salaryRecord.deleteMany();
-  await db.employee.deleteMany();
-  await db.compensationBand.deleteMany();
-  await db.fxRate.deleteMany();
+    console.log('Clearing existing data…');
+    await db.salaryRecord.deleteMany();
+    await db.employee.deleteMany();
+    await db.compensationBand.deleteMany();
+    await db.fxRate.deleteMany();
 
-  console.log('Seeding FX rates + compensation bands…');
-  await seedFx(db);
-  await seedBands(db);
+    console.log('Seeding FX rates + compensation bands…');
+    await seedFx(db);
+    await seedBands(db);
 
-  const fx = createFakeFxRateProvider(
-    Object.fromEntries(FX_RATES.map((r) => [r.currencyCode, r.rateToBase])),
-    BASE_CURRENCY,
-  );
+    const fx = createFakeFxRateProvider(
+      Object.fromEntries(FX_RATES.map((r) => [r.currencyCode, r.rateToBase])),
+      BASE_CURRENCY,
+    );
 
-  const planned = planEmployees();
-  console.log(`Seeding ${planned.length} employees in batches of ${BATCH_SIZE}…`);
+    const planned = planEmployees();
+    console.log(`Seeding ${planned.length} employees in batches of ${BATCH_SIZE}…`);
 
-  for (let offset = 0; offset < planned.length; offset += BATCH_SIZE) {
-    const batch = planned.slice(offset, offset + BATCH_SIZE);
-    await db.$transaction(
-      async (tx) => {
-        for (const p of batch) {
-          const { employeeId } = await insertEmployeeWithHire(
-            tx,
-            {
-              employeeCode: p.employeeCode,
-              firstName: p.firstName,
-              lastName: p.lastName,
-              workEmail: p.workEmail,
-              countryCode: p.countryCode,
-              location: p.location,
-              department: p.department,
-              jobFamily: p.jobFamily,
-              level: p.level,
-              employmentType: p.employmentType,
-              hireDate: p.hireDate.toISOString(),
-              gender: p.gender,
-              amountMinor: p.hireAmountMinor.toString(),
-              currency: p.currency,
-              payFrequency: p.payFrequency,
-            },
-            fx,
-            BASE_CURRENCY,
-          );
-
-          for (const raise of p.raises) {
-            await applySalaryChange(
+    for (let offset = 0; offset < planned.length; offset += BATCH_SIZE) {
+      const batch = planned.slice(offset, offset + BATCH_SIZE);
+      await db.$transaction(
+        async (tx) => {
+          for (const p of batch) {
+            const { employeeId } = await insertEmployeeWithHire(
               tx,
-              employeeId,
               {
-                amountMinor: raise.amountMinor.toString(),
+                employeeCode: p.employeeCode,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                workEmail: p.workEmail,
+                countryCode: p.countryCode,
+                location: p.location,
+                department: p.department,
+                jobFamily: p.jobFamily,
+                level: p.level,
+                employmentType: p.employmentType,
+                hireDate: p.hireDate.toISOString(),
+                gender: p.gender,
+                amountMinor: p.hireAmountMinor.toString(),
                 currency: p.currency,
                 payFrequency: p.payFrequency,
-                effectiveFrom: raise.effectiveFrom.toISOString(),
-                changeReason: raise.changeReason,
               },
               fx,
               BASE_CURRENCY,
             );
-          }
 
-          if (p.terminateAt) {
-            await applyTerminate(
-              tx,
-              employeeId,
-              { terminationDate: p.terminateAt.toISOString() },
-              SEED_TODAY,
-            );
+            for (const raise of p.raises) {
+              await applySalaryChange(
+                tx,
+                employeeId,
+                {
+                  amountMinor: raise.amountMinor.toString(),
+                  currency: p.currency,
+                  payFrequency: p.payFrequency,
+                  effectiveFrom: raise.effectiveFrom.toISOString(),
+                  changeReason: raise.changeReason,
+                },
+                fx,
+                BASE_CURRENCY,
+              );
+            }
+
+            if (p.terminateAt) {
+              await applyTerminate(
+                tx,
+                employeeId,
+                { terminationDate: p.terminateAt.toISOString() },
+                SEED_TODAY,
+              );
+            }
           }
-        }
-      },
-      { timeout: 120_000 },
+        },
+        { timeout: 120_000 },
+      );
+      console.log(`  … ${Math.min(offset + BATCH_SIZE, planned.length)} / ${planned.length}`);
+    }
+
+    console.log('Assigning managers (same dept/country, one level above when possible)…');
+    const managersAssigned = await assignManagers(db);
+
+    const [employees, salaryRecords, terminated, bands, fxCount] = await Promise.all([
+      db.employee.count(),
+      db.salaryRecord.count(),
+      db.employee.count({ where: { status: 'terminated' } }),
+      db.compensationBand.count(),
+      db.fxRate.count(),
+    ]);
+
+    const elapsedMs = Date.now() - started;
+    console.log(
+      JSON.stringify(
+        {
+          employees,
+          salaryRecords,
+          terminated,
+          bands,
+          fxRates: fxCount,
+          managersAssigned,
+          elapsedMs,
+        },
+        null,
+        2,
+      ),
     );
-    console.log(`  … ${Math.min(offset + BATCH_SIZE, planned.length)} / ${planned.length}`);
+  } finally {
+    await db.$disconnect();
   }
-
-  console.log('Assigning managers (same dept/country, one level above when possible)…');
-  const managersAssigned = await assignManagers(db);
-
-  const [employees, salaryRecords, terminated, bands, fxCount] = await Promise.all([
-    db.employee.count(),
-    db.salaryRecord.count(),
-    db.employee.count({ where: { status: 'terminated' } }),
-    db.compensationBand.count(),
-    db.fxRate.count(),
-  ]);
-
-  const elapsedMs = Date.now() - started;
-  console.log(
-    JSON.stringify(
-      {
-        employees,
-        salaryRecords,
-        terminated,
-        bands,
-        fxRates: fxCount,
-        managersAssigned,
-        elapsedMs,
-      },
-      null,
-      2,
-    ),
-  );
-
-  await db.$disconnect();
 }
 
-main().catch(async (err) => {
+main().catch((err) => {
   console.error(err);
-  process.exitCode = 1;
+  process.exit(1);
 });
