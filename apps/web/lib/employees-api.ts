@@ -114,4 +114,69 @@ export async function downloadEmployeesCsv(params: Omit<EmployeeListParams, 'pag
   URL.revokeObjectURL(url);
 }
 
+export type EmployeeDetail = EmployeeListItem & {
+  managerId: string | null;
+  managerName: string | null;
+  gender: string | null;
+  jobFamily: string;
+  location: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SalaryHistoryRecord = {
+  id: string;
+  employeeId: string;
+  amountMinor: string;
+  currency: string;
+  payFrequency: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  changeReason: string;
+  note: string | null;
+  fxRateToBase: number;
+  amountBaseMinor: string;
+  createdAt: string;
+};
+
+export type SalaryChangeBody = {
+  amountMinor: string;
+  currency: string;
+  payFrequency: 'annual' | 'monthly';
+  effectiveFrom: string;
+  changeReason: 'promotion' | 'merit' | 'market_adjustment' | 'correction';
+  note?: string;
+};
+
+export async function getEmployee(id: string): Promise<EmployeeDetail> {
+  return apiFetch<EmployeeDetail>(`/api/employees/${id}`);
+}
+
+export async function getEmployeeHistory(id: string): Promise<SalaryHistoryRecord[]> {
+  const res = await apiFetch<{ data: SalaryHistoryRecord[] }>(`/api/employees/${id}/history`);
+  return res.data;
+}
+
+export async function recordSalaryChange(
+  id: string,
+  body: SalaryChangeBody,
+): Promise<SalaryHistoryRecord> {
+  return apiFetch<SalaryHistoryRecord>(`/api/employees/${id}/salary-changes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function terminateEmployee(
+  id: string,
+  body: { terminationDate: string; note?: string },
+): Promise<void> {
+  await apiFetch<void>(`/api/employees/${id}/terminate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
 export { ApiError };
