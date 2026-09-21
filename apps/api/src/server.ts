@@ -1,7 +1,17 @@
 import { createApp } from './app.js';
+import { ensureDbReady } from './db/client.js';
 
 const port = Number(process.env.PORT ?? 4000);
-const app = createApp();
 
-// Placeholder listen — Express wiring arrives in the plumbing commit.
-console.log(`@acme/api scaffold ready (port ${port}, app.ready=${app.ready})`);
+async function main(): Promise<void> {
+  await ensureDbReady();
+  const app = createApp();
+  app.listen(port, () => {
+    console.log(`@acme/api listening on :${port}`);
+  });
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
