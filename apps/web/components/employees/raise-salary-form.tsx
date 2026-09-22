@@ -3,14 +3,13 @@
 import { useState, type FormEvent } from 'react';
 import { Typography } from '@/components/typography';
 import { Button } from '@/components/ui/button';
+import { FormError } from '@/components/ui/form-error';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { formatApiErrorMessage } from '@/lib/api-error-message';
 import { todayLocalDateInput } from '@/lib/date-format';
-import {
-  ApiError,
-  recordSalaryChange,
-} from '@/lib/employees-api';
+import { recordSalaryChange } from '@/lib/employees-api';
 import { majorToMinorString } from '@/lib/money-format';
 
 type Props = {
@@ -55,7 +54,7 @@ export function RaiseSalaryForm({
       setNote('');
       onSuccess();
     } catch (err) {
-      setError(err instanceof ApiError || err instanceof Error ? err.message : 'Raise failed');
+      setError(formatApiErrorMessage(err, 'Raise failed'));
     } finally {
       setSubmitting(false);
     }
@@ -63,6 +62,7 @@ export function RaiseSalaryForm({
 
   return (
     <form className="grid gap-3" onSubmit={onSubmit}>
+      <FormError message={error} />
       <div className="grid gap-1.5">
         <Label>New amount (major units)</Label>
         <Input
@@ -127,11 +127,6 @@ export function RaiseSalaryForm({
         <Label>Note (optional)</Label>
         <Input value={note} onChange={(e) => setNote(e.target.value)} />
       </div>
-      {error ? (
-        <Typography variant="small" className="text-red-700">
-          {error}
-        </Typography>
-      ) : null}
       <Button type="submit" disabled={submitting}>
         <Typography variant="button">{submitting ? 'Saving…' : 'Save raise'}</Typography>
       </Button>

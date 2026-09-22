@@ -12,10 +12,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { FormError } from '@/components/ui/form-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatApiErrorMessage } from '@/lib/api-error-message';
 import { todayLocalDateInput } from '@/lib/date-format';
-import { ApiError, terminateEmployee } from '@/lib/employees-api';
+import { terminateEmployee } from '@/lib/employees-api';
 
 type Props = {
   open: boolean;
@@ -47,7 +49,7 @@ export function TerminateEmployeeDialog({ open, employeeId, onClose, onTerminate
       });
       onTerminated();
     } catch (err) {
-      setError(err instanceof ApiError || err instanceof Error ? err.message : 'Terminate failed');
+      setError(formatApiErrorMessage(err, 'Terminate failed'));
     } finally {
       setSubmitting(false);
     }
@@ -64,6 +66,7 @@ export function TerminateEmployeeDialog({ open, employeeId, onClose, onTerminate
         </AlertDialogHeader>
 
         <form className="grid gap-4" onSubmit={onSubmit}>
+          <FormError message={error} />
           <div className="grid gap-1.5">
             <Label>Termination date</Label>
             <Input
@@ -77,11 +80,6 @@ export function TerminateEmployeeDialog({ open, employeeId, onClose, onTerminate
             <Label>Note (optional)</Label>
             <Input value={note} onChange={(e) => setNote(e.target.value)} />
           </div>
-          {error ? (
-            <Typography variant="small" className="text-red-700">
-              {error}
-            </Typography>
-          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>
               <Typography variant="button">Cancel</Typography>
