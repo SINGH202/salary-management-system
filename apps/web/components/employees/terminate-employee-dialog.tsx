@@ -2,6 +2,15 @@
 
 import { useState, type FormEvent } from 'react';
 import { Typography } from '@/components/typography';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,18 +24,17 @@ type Props = {
   onTerminated: () => void;
 };
 
-export function TerminateEmployeeDialog({
-  open,
-  employeeId,
-  onClose,
-  onTerminated,
-}: Props) {
+export function TerminateEmployeeDialog({ open, employeeId, onClose, onTerminated }: Props) {
   const [terminationDate, setTerminationDate] = useState(todayLocalDateInput);
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (!open) return null;
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && !submitting) {
+      onClose();
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,29 +47,23 @@ export function TerminateEmployeeDialog({
       });
       onTerminated();
     } catch (err) {
-      setError(
-        err instanceof ApiError || err instanceof Error ? err.message : 'Terminate failed',
-      );
+      setError(err instanceof ApiError || err instanceof Error ? err.message : 'Terminate failed');
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/40 p-4 pt-24">
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="terminate-title"
-        className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-lg"
-      >
-        <Typography variant="h2" id="terminate-title" className="mb-2">
-          Terminate employee?
-        </Typography>
-        <Typography variant="small" className="mb-4">
-          This is one-way. The open salary record will close and they leave active payroll.
-        </Typography>
-        <form className="grid gap-3" onSubmit={onSubmit}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Terminate employee?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This is one-way. The open salary record will close and they leave active payroll.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <form className="grid gap-4" onSubmit={onSubmit}>
           <div className="grid gap-1.5">
             <Label>Termination date</Label>
             <Input
@@ -80,18 +82,18 @@ export function TerminateEmployeeDialog({
               {error}
             </Typography>
           ) : null}
-          <div className="mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>
               <Typography variant="button">Cancel</Typography>
-            </Button>
+            </AlertDialogCancel>
             <Button type="submit" disabled={submitting}>
               <Typography variant="button">
                 {submitting ? 'Terminating…' : 'Confirm terminate'}
               </Typography>
             </Button>
-          </div>
+          </AlertDialogFooter>
         </form>
-      </div>
-    </div>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

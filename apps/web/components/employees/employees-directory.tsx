@@ -13,6 +13,8 @@ import { AddEmployeeDialog } from '@/components/employees/add-employee-dialog';
 import { Typography } from '@/components/typography';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchInput } from '@/components/ui/search-input';
+import { Select } from '@/components/ui/select';
 import {
   downloadEmployeesCsv,
   listEmployees,
@@ -233,22 +235,25 @@ export function EmployeesDirectory({ initialData }: Props) {
 
       <div className="flex flex-wrap gap-3">
         <FilterField label="Search">
-          <Input
+          <SearchInput
             placeholder="Name or email (2+ chars)"
             value={filters.search}
             onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-            className="w-52"
+            onClear={() => setFilters((f) => ({ ...f, search: '' }))}
+            className="w-56"
+            aria-label="Search employees"
           />
         </FilterField>
         <FilterField label="Status">
-          <select
-            className="flex h-9 rounded-md border border-input bg-background px-3 text-sm"
+          <Select
+            className="w-36"
             value={filters.status}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
+            aria-label="Filter by status"
           >
             <option value="active">Active</option>
             <option value="terminated">Terminated</option>
-          </select>
+          </Select>
         </FilterField>
         <FilterField label="Country">
           <Input

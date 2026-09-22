@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { Typography } from '@/components/typography';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { todayLocalDateInput } from '@/lib/date-format';
 import {
@@ -84,14 +85,14 @@ export function RaiseSalaryForm({
         </div>
         <div className="grid gap-1.5">
           <Label>Pay frequency</Label>
-          <select
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          <Select
             value={payFrequency}
             onChange={(e) => setPayFrequency(e.target.value as 'annual' | 'monthly')}
+            aria-label="Pay frequency"
           >
             <option value="annual">Annual</option>
             <option value="monthly">Monthly</option>
-          </select>
+          </Select>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -106,20 +107,20 @@ export function RaiseSalaryForm({
         </div>
         <div className="grid gap-1.5">
           <Label>Reason</Label>
-          <select
-            className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+          <Select
             value={changeReason}
             onChange={(e) =>
               setChangeReason(
                 e.target.value as 'promotion' | 'merit' | 'market_adjustment' | 'correction',
               )
             }
+            aria-label="Change reason"
           >
             <option value="merit">Merit</option>
             <option value="promotion">Promotion</option>
             <option value="market_adjustment">Market adjustment</option>
             <option value="correction">Correction</option>
-          </select>
+          </Select>
         </div>
       </div>
       <div className="grid gap-1.5">
