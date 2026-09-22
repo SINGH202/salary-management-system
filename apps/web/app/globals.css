@@ -28,3 +28,9 @@ body {
     radial-gradient(ellipse 60% 40% at 100% 0%, hsl(40 50% 90% / 0.7), transparent);
   min-height: 100vh;
 }
+
+/* Prefer our SearchInput clear control over the WebKit native cancel affordance. */
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}

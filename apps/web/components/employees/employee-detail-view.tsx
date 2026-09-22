@@ -120,26 +120,45 @@ export function EmployeeDetailView({ employee: initial, history: initialHistory 
 
       <section className="space-y-3">
         <Typography variant="h3">Salary history</Typography>
-        <ol className="relative space-y-0 border-l border-border pl-6">
-          {history.map((record) => (
-            <li key={record.id} className="relative pb-6 last:pb-0">
-              <span className="absolute -left-[1.625rem] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-              <Typography variant="bodyMedium" className="font-medium">
-                {labelize(record.changeReason)} ·{' '}
-                {formatMoneyMinor(record.amountMinor, record.currency)} / {record.payFrequency}
-              </Typography>
-              <Typography variant="small">
-                {formatDateOnlyUtc(record.effectiveFrom)}
-                {record.effectiveTo
-                  ? ` → ${formatDateOnlyUtc(record.effectiveTo)}`
-                  : ' → open'}
-              </Typography>
-              {record.note ? (
-                <Typography variant="small">{record.note}</Typography>
-              ) : null}
-            </li>
-          ))}
-        </ol>
+        {history.length === 0 ? (
+          <Typography variant="small">No salary records yet.</Typography>
+        ) : (
+          <ul className="divide-y divide-border overflow-hidden rounded-md border border-border bg-background">
+            {history.map((record) => (
+              <li
+                key={record.id}
+                className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
+              >
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Typography
+                      variant="small"
+                      className="rounded-md bg-muted px-2 py-0.5 font-medium capitalize text-foreground"
+                    >
+                      {labelize(record.changeReason)}
+                    </Typography>
+                    <Typography variant="bodyMedium" className="font-medium">
+                      {formatMoneyMinor(record.amountMinor, record.currency)}
+                    </Typography>
+                    <Typography variant="small">/ {record.payFrequency}</Typography>
+                  </div>
+                  {record.note ? (
+                    <Typography variant="small">{record.note}</Typography>
+                  ) : null}
+                </div>
+                <Typography
+                  variant="small"
+                  className="shrink-0 tabular-nums text-muted-foreground sm:pt-0.5 sm:text-right"
+                >
+                  {formatDateOnlyUtc(record.effectiveFrom)}
+                  {record.effectiveTo
+                    ? ` → ${formatDateOnlyUtc(record.effectiveTo)}`
+                    : ' → open'}
+                </Typography>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <TerminateEmployeeDialog
