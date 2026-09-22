@@ -10,11 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { FormError } from '@/components/ui/form-error';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { formatApiErrorMessage } from '@/lib/api-error-message';
 import { todayLocalDateInput } from '@/lib/date-format';
-import { ApiError, createEmployee, type EmployeeCreateBody } from '@/lib/employees-api';
+import { createEmployee, type EmployeeCreateBody } from '@/lib/employees-api';
 import { majorToMinorString } from '@/lib/money-format';
 import { cn } from '@/lib/utils';
 
@@ -90,13 +92,7 @@ export function AddEmployeeDialog({ open, onClose, onCreated }: Props) {
       onCreated();
       onClose();
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError('Failed to create employee');
-      }
+      setError(formatApiErrorMessage(err, 'Failed to create employee'));
     } finally {
       setSubmitting(false);
     }
@@ -110,6 +106,12 @@ export function AddEmployeeDialog({ open, onClose, onCreated }: Props) {
         </DialogHeader>
 
         <form className="flex min-h-0 flex-1 flex-col" onSubmit={onSubmit}>
+          <FormError
+            message={error}
+            scrollOnShow={false}
+            className="shrink-0 rounded-none border-x-0 border-t-0 px-6 py-3"
+          />
+
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             <div className="grid gap-4">
               <Field label="Employee code">
@@ -238,9 +240,7 @@ export function AddEmployeeDialog({ open, onClose, onCreated }: Props) {
                 <Field label="Pay frequency">
                   <Select
                     value={form.payFrequency}
-                    onChange={(e) =>
-                      update('payFrequency', e.target.value as 'annual' | 'monthly')
-                    }
+                    onChange={(e) => update('payFrequency', e.target.value as 'annual' | 'monthly')}
                     aria-label="Pay frequency"
                   >
                     <option value="annual">Annual</option>
@@ -249,12 +249,6 @@ export function AddEmployeeDialog({ open, onClose, onCreated }: Props) {
                 </Field>
               </div>
             </div>
-
-            {error ? (
-              <Typography variant="small" className="mt-4 text-red-700">
-                {error}
-              </Typography>
-            ) : null}
           </div>
 
           <DialogFooter className="shrink-0 border-t border-border px-6 py-4 sm:space-x-0">

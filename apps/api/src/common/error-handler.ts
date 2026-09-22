@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import { FxRateNotFoundError } from '../modules/fx/fx.types.js';
 
@@ -96,11 +97,22 @@ export function errorHandler(
     return;
   }
 
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+    const target = Array.isArray(err.meta?.target) ? err.meta.target.join(', ') : err.meta?.target;
+    sendError(
+      res,
+      409,
+      'CONFLICT',
+      target ? `Unique constraint failed on: ${String(target)}` : 'Unique constraint failed',
+      err.meta,
+    );
+    return;
+  }
+
   if (isBodyParserError(err)) {
     const status = err.status ?? err.statusCode ?? 400;
     const code = status === 413 ? 'PAYLOAD_TOO_LARGE' : 'BAD_REQUEST';
-    const message =
-      status === 413 ? 'Request body too large' : 'Malformed JSON request body';
+    const message = status === 413 ? 'Request body too large' : 'Malformed JSON request body';
     sendError(res, status, code, message);
     return;
   }
