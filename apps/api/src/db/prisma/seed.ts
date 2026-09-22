@@ -17,7 +17,10 @@ import { ensureDbReady } from '../client.js';
 const SEED_TODAY = new Date('2026-09-01T00:00:00.000Z');
 const BASE_CURRENCY = 'INR';
 const EMPLOYEE_COUNT = 10_000;
-const BATCH_SIZE = 1000;
+/** Override with SEED_BATCH_SIZE=50 on small VMs (e2-micro) to avoid Prisma P2028 timeouts. */
+const BATCH_SIZE = Math.max(1, Number(process.env.SEED_BATCH_SIZE ?? 200) || 200);
+/** Interactive transactions on SQLite + hire/raise/terminate easily exceed Prisma's 5s default. */
+const TX_OPTIONS = { timeout: 300_000, maxWait: 60_000 } as const;
 
 const LEVELS = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'] as const;
 type Level = (typeof LEVELS)[number];
@@ -329,6 +332,7 @@ async function assignManagers(db: PrismaClient): Promise<number> {
 
   for (let i = 0; i < updates.length; i += BATCH_SIZE) {
     const chunk = updates.slice(i, i + BATCH_SIZE);
+    // Batch (array) transactions only accept isolationLevel — not timeout/maxWait.
     await db.$transaction(
       chunk.map((u) =>
         db.employee.update({
@@ -422,7 +426,7 @@ async function main(): Promise<void> {
             }
           }
         },
-        { timeout: 120_000 },
+        TX_OPTIONS,
       );
       console.log(`  … ${Math.min(offset + BATCH_SIZE, planned.length)} / ${planned.length}`);
     }

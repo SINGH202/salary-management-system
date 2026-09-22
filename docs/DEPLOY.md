@@ -2,21 +2,25 @@
 
 **Recommended path for this project** (~$0 backend if you stay in free limits).
 
-| Piece | Where | Cost |
-|---|---|---|
-| Express API + SQLite | GCP Compute Engine **`e2-micro`** | Always Free |
-| Next.js UI | **Vercel Hobby** | Free |
+
+| Piece                | Where                             | Cost        |
+| -------------------- | --------------------------------- | ----------- |
+| Express API + SQLite | GCP Compute Engine `**e2-micro**` | Always Free |
+| Next.js UI           | **Vercel Hobby**                  | Free        |
+
 
 Do **not** put SQLite on Vercel — the filesystem is ephemeral.
 
 ### Free-tier limits (must follow)
 
-| Limit | Value |
-|---|---|
-| Machine | **`e2-micro`** only (shared vCPU, **1 GB RAM**) |
-| Regions | **`us-central1`**, **`us-west1`**, or **`us-east1`** only |
-| Disk | Up to **30 GB** standard persistent disk |
-| Egress | **1 GB/month** outbound (enough for a demo) |
+
+| Limit   | Value                                                     |
+| ------- | --------------------------------------------------------- |
+| Machine | `**e2-micro**` only (shared vCPU, **1 GB RAM**)           |
+| Regions | `**us-central1**`, `**us-west1**`, or `**us-east1**` only |
+| Disk    | Up to **30 GB** standard persistent disk                  |
+| Egress  | **1 GB/month** outbound (enough for a demo)               |
+
 
 1 GB RAM is tight for the 10k seed — use the swap + `tmux` steps in §5 (or temporarily resize to `e2-small`, seed, then resize back).
 
@@ -41,18 +45,20 @@ New accounts may also get a **$300 trial credit** — useful if you briefly use 
 1. **Compute Engine → VM instances → Create instance**.
 2. Set:
 
-| Field | Value |
-|---|---|
-| Name | `acme-api` |
-| Region | **`us-central1`** (or `us-west1` / `us-east1`) |
-| Zone | e.g. `us-central1-a` |
-| Series | **E2** |
-| Machine type | **`e2-micro`** |
-| Boot disk | **Ubuntu 24.04 LTS**, **20–30 GB**, **Standard persistent disk** |
-| Firewall | ✅ **Allow HTTP traffic**, ✅ **Allow HTTPS traffic** |
 
-3. Click **Create** → wait for **Running**.
-4. Copy the **External IP** (call it `EXTERNAL_IP` below).
+| Field        | Value                                                            |
+| ------------ | ---------------------------------------------------------------- |
+| Name         | `acme-api`                                                       |
+| Region       | `**us-central1**` (or `us-west1` / `us-east1`)                   |
+| Zone         | e.g. `us-central1-a`                                             |
+| Series       | **E2**                                                           |
+| Machine type | `**e2-micro**`                                                   |
+| Boot disk    | **Ubuntu 24.04 LTS**, **20–30 GB**, **Standard persistent disk** |
+| Firewall     | ✅ **Allow HTTP traffic**, ✅ **Allow HTTPS traffic**              |
+
+
+1. Click **Create** → wait for **Running**.
+2. Copy the **External IP** (call it `EXTERNAL_IP` below).
 
 ### Firewall check
 
@@ -78,7 +84,7 @@ gcloud compute ssh acme-api --zone=us-central1-a --project=YOUR_PROJECT_ID
 
 ```bash
 sudo apt update
-sudo apt install -y nginx git curl build-essential tmux
+sudo apt install -y nano nginx git curl build-essential tmux
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo npm i -g pnpm@9 pm2
@@ -87,6 +93,7 @@ node -v   # expect v20.x
 pnpm -v   # expect 9.x
 ```
 
+(`nano` is used later to edit `apps/api/.env`. On a minimal image you can also install it alone with `sudo apt update && sudo apt install -y nano`.)
 **Swap is required** on 1 GB RAM:
 
 ```bash
@@ -134,22 +141,26 @@ cd /opt/acme
 pnpm --filter @acme/api db:migrate
 ```
 
-Seed in `tmux` so an SSH drop does not kill it (5–20 minutes on e2-micro):
+Seed in `tmux` so an SSH drop does not kill it (can take 15–40+ minutes on e2-micro).
+
+Use a **small batch size** so Prisma interactive transactions do not hit **P2028** (transaction timed out / closed) on 1 GB RAM:
 
 ```bash
 cd /opt/acme/apps/api
 tmux new -s seed
-NODE_OPTIONS="--max-old-space-size=768" pnpm db:seed
+SEED_BATCH_SIZE=50 NODE_OPTIONS="--max-old-space-size=768" pnpm db:seed
 # Detach: Ctrl+B then D
 # Reattach: tmux attach -t seed
 ```
 
+If you see `P2028` / “Transaction not found”, re-run with an even smaller batch (`SEED_BATCH_SIZE=25`) or temporarily resize to **`e2-small`**, seed, then resize back.
+
 If the process is killed (exit **137** / OOM):
 
-1. Stop the VM → edit → change type to **`e2-small`** → start  
-2. Re-run seed  
-3. Stop → change type back to **`e2-micro`** → start  
-   (`/var/lib/acme/acme.db` stays on disk)
+1. Stop the VM → edit → change type to `**e2-small**` → start
+2. Re-run seed
+3. Stop → change type back to `**e2-micro**` → start
+  (`/var/lib/acme/acme.db` stays on disk)
 
 ```bash
 ls -lh /var/lib/acme/acme.db
@@ -246,8 +257,8 @@ NEXT_PUBLIC_DEMO_ACCESS_TOKEN=pick-a-long-random-string
 
 `NEXT_PUBLIC_DEMO_ACCESS_TOKEN` **must** equal the API `DEMO_ACCESS_TOKEN`.
 
-5. Deploy → copy the site URL (e.g. `https://acme-salary.vercel.app`).
-6. On the VM, lock CORS and restart:
+1. Deploy → copy the site URL (e.g. `https://acme-salary.vercel.app`).
+2. On the VM, lock CORS and restart:
 
 ```bash
 nano /opt/acme/apps/api/.env
@@ -272,10 +283,10 @@ pm2 restart acme-api
 
 ## 10. Stay free
 
-- Keep **`e2-micro`** in **`us-central1` / `us-west1` / `us-east1`**
+- Keep `**e2-micro**` in `**us-central1` / `us-west1` / `us-east1**`
 - Disk ≤ **30 GB** standard  
 - Do not reserve unused static IPs unnecessarily  
-- Watch budget alert emails  
+- Watch budget alert emails
 
 ```bash
 pm2 status
@@ -292,14 +303,17 @@ cd /opt/acme && git pull && pnpm install --filter @acme/api... \
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| Seed exit 137 / killed | Swap + `tmux`; or seed on `e2-small`, resize back to `e2-micro` |
-| CORS errors | `CORS_ORIGIN` must match the Vercel origin exactly (`https://…`, no trailing `/`) |
-| Mixed content | Put HTTPS on the API (Certbot) before using Vercel |
-| Can’t create `e2-micro` | Wrong region, or request quota for E2 micros |
-| `pnpm: not found` | `sudo npm i -g pnpm@9` |
-| Build OOM | Rely on swap; build only `@acme/api` |
+
+| Symptom                 | Fix                                                                               |
+| ----------------------- | --------------------------------------------------------------------------------- |
+| Seed exit 137 / killed  | Swap + `tmux`; or seed on `e2-small`, resize back to `e2-micro`                   |
+| Seed `P2028` / Transaction not found | `SEED_BATCH_SIZE=50` (or `25`); pull latest seed; or seed on `e2-small` |
+| CORS errors             | `CORS_ORIGIN` must match the Vercel origin exactly (`https://…`, no trailing `/`) |
+| Mixed content           | Put HTTPS on the API (Certbot) before using Vercel                                |
+| Can’t create `e2-micro` | Wrong region, or request quota for E2 micros                                      |
+| `pnpm: not found`       | `sudo npm i -g pnpm@9`                                                            |
+| Build OOM               | Rely on swap; build only `@acme/api`                                              |
+
 
 ---
 
@@ -307,9 +321,9 @@ cd /opt/acme && git pull && pnpm install --filter @acme/api... \
 
 Use this if GCP signup fails and your **AWS account is fully activated** (payment verified). Rough cost: small EC2 while using credits (~few $/mo equivalent).
 
-1. Launch **Ubuntu 24.04**, **`t3.small`** (or `t3.micro`), 20 GB disk, SG: 22 (your IP), 80/443 public.  
-2. Same install/clone/env/migrate/seed/pm2/nginx steps as §§3–7, with `DATABASE_URL=file:/var/lib/acme/acme.db?connection_limit=1`.  
-3. Same Vercel steps as §8, pointing at the EC2 API URL.  
+1. Launch **Ubuntu 24.04**, `**t3.small`** (or `t3.micro`), 20 GB disk, SG: 22 (your IP), 80/443 public.
+2. Same install/clone/env/migrate/seed/pm2/nginx steps as §§3–7, with `DATABASE_URL=file:/var/lib/acme/acme.db?connection_limit=1`.
+3. Same Vercel steps as §8, pointing at the EC2 API URL.
 4. Set an AWS billing alarm at $5–10.
 
 GCP Always Free remains the preferred $0 path for this assessment.
